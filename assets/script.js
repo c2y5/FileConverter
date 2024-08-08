@@ -3,10 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const uploadArea = document.getElementById("upload-area");
   const filePreview = document.getElementById("file-preview");
 
-  fileInput.addEventListener("change", function () {
-    const files = fileInput.files;
-    updateFilePreview(files);
-  });
+  fileInput.addEventListener("change", handleFileChange);
 
   uploadArea.addEventListener("dragover", function (event) {
     event.preventDefault();
@@ -22,42 +19,58 @@ document.addEventListener("DOMContentLoaded", function () {
     uploadArea.classList.remove("dragover");
     const files = event.dataTransfer.files;
     fileInput.files = files;
-    updateFilePreview(files);
+    handleFileChange();
   });
+
+  function handleFileChange() {
+    const files = fileInput.files;
+    updateFilePreview(files);
+
+    if (files.length > 0) {
+      uploadArea.style.display = "none";
+    } else {
+      uploadArea.style.display = "flex";
+    }
+  }
 
   function updateFilePreview(files) {
     filePreview.innerHTML = "";
 
-    Array.from(files).forEach((file) => {
-      const fileDetails = document.createElement("p");
-      fileDetails.textContent = `File: ${file.name}`;
-      filePreview.appendChild(fileDetails);
+    Array.from(files).forEach((file, index) => {
+      const fileItem = document.createElement("div");
+      fileItem.classList.add("file-item");
 
-      const reader = new FileReader();
+      const fileName = document.createElement("span");
+      fileName.textContent = `${file.name} (${(file.size / 1024).toFixed(
+        2
+      )} KB)`;
 
-      reader.onload = function (e) {
-        if (file.type.startsWith("image/")) {
-          const img = document.createElement("img");
-          img.src = e.target.result;
-          img.style.maxWidth = "200px";
-          img.style.marginTop = "10px";
-          filePreview.appendChild(img);
-        } else if (file.type.startsWith("video/")) {
-          const video = document.createElement("video");
-          video.src = e.target.result;
-          video.controls = true;
-          video.style.maxWidth = "200px";
-          video.style.marginTop = "10px";
-          filePreview.appendChild(video);
-        } else if (file.type.startsWith("audio/")) {
-          const audio = document.createElement("audio");
-          audio.src = e.target.result;
-          audio.controls = true;
-          filePreview.appendChild(audio);
-        }
-      };
+      const deleteButton = document.createElement("button");
+      deleteButton.textContent = "X";
+      deleteButton.addEventListener("click", function () {
+        removeFile(index);
+      });
 
-      reader.readAsDataURL(file);
+      fileItem.appendChild(fileName);
+      fileItem.appendChild(deleteButton);
+      filePreview.appendChild(fileItem);
     });
+  }
+
+  function removeFile(index) {
+    const dataTransfer = new DataTransfer();
+    const files = Array.from(fileInput.files);
+
+    files.splice(index, 1);
+
+    files.forEach((file) => dataTransfer.items.add(file));
+
+    fileInput.files = dataTransfer.files;
+
+    handleFileChange();
+
+    if (fileInput.files.length === 0) {
+      uploadArea.style.display = "flex";
+    }
   }
 });
